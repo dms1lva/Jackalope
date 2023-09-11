@@ -15,20 +15,26 @@
 cmake_minimum_required(VERSION "3.1")
 set (CMAKE_CXX_STANDARD 17)
 
+add_subdirectory(TinyInst)
+
 # Determine whether TinyInst should be build for arm64 or x86
-if(APPLE AND NOT DEFINED ${ARCHITECTURE})
+if (WIN32)
+  # no support for arm64 on Windows
+elseif(ANDROID_ABI)
+  set(ANDROID TRUE)
+  if(${ANDROID_ABI} MATCHES "arm64")
+    set(ARCHITECTURE ${ANDROID_ABI})
+    add_definitions(-DARM64)
+  endif()
+elseif(NOT DEFINED ${ARCHITECTURE})
   EXECUTE_PROCESS(COMMAND uname -m COMMAND tr -d '\n' OUTPUT_VARIABLE ARCHITECTURE)
   if(${ARCHITECTURE} MATCHES arm64)
     add_definitions(-DARM64)
   endif()
 endif()
 
-if(UNIX AND NOT APPLE)
+if(UNIX AND NOT APPLE AND NOT ANDROID)
   set(LINUX TRUE)
-endif()
-
-if(NOT LINUX)
-  add_subdirectory(TinyInst)
 endif()
 
 project(test_netmode)
@@ -51,8 +57,6 @@ if(LINUX)
   )
 else()
   set(platform_specific_sources
-    tinyinstinstrumentation.h
-    tinyinstinstrumentation.cpp
   )
 endif()
 
@@ -65,6 +69,8 @@ add_library(fuzzerlib STATIC
   fuzzer.h
   instrumentation.cpp
   instrumentation.h
+  tinyinstinstrumentation.h
+  tinyinstinstrumentation.cpp
   mutator.cpp
   mutator.h
   minimizer.cpp
@@ -103,17 +109,6 @@ if(LINUX)
   target_link_libraries(fuzzerlib pthread)
 endif()
 
-# In case of Linux, compile a minimum TinyInst
-# with only multiplatform essentials.
-if(LINUX) 
-  add_library(tinyinst STATIC
-    TinyInst/common.h
-    TinyInst/common.cpp
-    TinyInst/coverage.h
-    TinyInst/coverage.cpp
-    )
-endif()
-
 add_dependencies(fuzzerlib tinyinst)
 target_link_libraries(fuzzerlib tinyinst)
 
@@ -137,7 +132,7 @@ endif()
 
 if(LINUX)
   if (NOT(CMAKE_CXX_COMPILER_ID STREQUAL "Clang"))
-    message(FATAL_ERROR "You need to use Clang to compile the target with Sanitizer Coverage")
+    message(FATAL_ERROR "You need to use Clang to compile TinyInst on Linux")
   endif()
 
   add_executable(sancovtest

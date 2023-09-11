@@ -1167,11 +1167,21 @@ PRNG *Fuzzer::CreatePRNG(int argc, char **argv, ThreadContext *tc)
 
 Instrumentation *Fuzzer::CreateInstrumentation(int argc, char **argv, ThreadContext *tc)
 {
-#ifdef linux
-  SanCovInstrumentation *instrumentation = new SanCovInstrumentation(tc->thread_id);
-#else
-  TinyInstInstrumentation *instrumentation = new TinyInstInstrumentation();
+  Instrumentation *instrumentation = NULL;
+
+#if defined(linux) && !defined(__ANDROID__)
+  char *option = GetOption("-instrumentation", argc, argv);
+  if (option && !strcmp(option, "sancov"))
+  {
+    instrumentation = new SanCovInstrumentation(tc->thread_id);
+  }
 #endif
+
+  if (!instrumentation)
+  {
+    instrumentation = new TinyInstInstrumentation();
+  }
+
   instrumentation->Init(argc, argv);
   return instrumentation;
 }
