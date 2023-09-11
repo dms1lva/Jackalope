@@ -22,8 +22,8 @@ limitations under the License.
 
 #include <sstream>
 
-
-void TinyInstInstrumentation::Init(int argc, char **argv) {
+void TinyInstInstrumentation::Init(int argc, char **argv)
+{
   instrumentation = new LiteCov();
   instrumentation->Init(argc, argv);
 
@@ -31,30 +31,38 @@ void TinyInstInstrumentation::Init(int argc, char **argv) {
   num_iterations = GetIntOption("-iterations", argc, argv, 1);
 }
 
-RunResult TinyInstInstrumentation::Run(int argc, char **argv, uint32_t init_timeout, uint32_t timeout) {
+RunResult TinyInstInstrumentation::Run(int argc, char **argv, uint32_t init_timeout, uint32_t timeout)
+{
   DebuggerStatus status;
   RunResult ret = OTHER_ERROR;
 
-  if (instrumentation->IsTargetFunctionDefined()) {
-    if (cur_iteration == num_iterations) {
-      instrumentation->Kill();
-      cur_iteration = 0;
-    }
-  }
-  
+  // if (instrumentation->IsTargetFunctionDefined())
+  // {
+  //   if (cur_iteration == num_iterations)
+  //   {
+  //     instrumentation->Kill();
+  //     cur_iteration = 0;
+  //   }
+  // }
+
   // else clear only when the target function is reached
-  if (!instrumentation->IsTargetFunctionDefined()) {
+  if (!instrumentation->IsTargetFunctionDefined())
+  {
     instrumentation->ClearCoverage();
   }
 
   uint32_t timeout1 = timeout;
-  if (instrumentation->IsTargetFunctionDefined()) {
+  if (instrumentation->IsTargetFunctionDefined())
+  {
     timeout1 = init_timeout;
   }
 
-  if (instrumentation->IsTargetAlive() && persist) {
+  if (instrumentation->IsTargetAlive() && persist)
+  {
     status = instrumentation->Continue(timeout1);
-  } else {
+  }
+  else
+  {
     instrumentation->Kill();
     cur_iteration = 0;
     status = instrumentation->Run(argc, argv, timeout1);
@@ -62,8 +70,10 @@ RunResult TinyInstInstrumentation::Run(int argc, char **argv, uint32_t init_time
 
   // if target function is defined,
   // we should wait until it is hit
-  if (instrumentation->IsTargetFunctionDefined()) {
-    if (status != DEBUGGER_TARGET_START) {
+  if (instrumentation->IsTargetFunctionDefined())
+  {
+    if (status != DEBUGGER_TARGET_START)
+    {
       // try again with a clean process
       WARN("Target function not reached, retrying with a clean process\n");
       instrumentation->Kill();
@@ -71,8 +81,10 @@ RunResult TinyInstInstrumentation::Run(int argc, char **argv, uint32_t init_time
       status = instrumentation->Run(argc, argv, init_timeout);
     }
 
-    if (status != DEBUGGER_TARGET_START) {
-      switch (status) {
+    if (status != DEBUGGER_TARGET_START)
+    {
+      switch (status)
+      {
       case DEBUGGER_CRASHED:
         FATAL("Process crashed before reaching the target method\n");
         break;
@@ -93,7 +105,8 @@ RunResult TinyInstInstrumentation::Run(int argc, char **argv, uint32_t init_time
     status = instrumentation->Continue(timeout);
   }
 
-  switch (status) {
+  switch (status)
+  {
   case DEBUGGER_CRASHED:
     ret = CRASH;
     instrumentation->Kill();
@@ -104,16 +117,25 @@ RunResult TinyInstInstrumentation::Run(int argc, char **argv, uint32_t init_time
     break;
   case DEBUGGER_PROCESS_EXIT:
     ret = OK;
-    if (instrumentation->IsTargetFunctionDefined()) {
+    if (instrumentation->IsTargetFunctionDefined())
+    {
       WARN("Process exit during target function\n");
       ret = HANG;
     }
     break;
   case DEBUGGER_TARGET_END:
-    if (instrumentation->IsTargetFunctionDefined()) {
+    if (instrumentation->IsTargetFunctionDefined())
+    {
       ret = OK;
       cur_iteration++;
-    } else {
+      if (cur_iteration == num_iterations)
+      {
+        instrumentation->Kill();
+        cur_iteration = 0;
+      }
+    }
+    else
+    {
       FATAL("Unexpected status received from the debugger\n");
     }
     break;
@@ -125,7 +147,8 @@ RunResult TinyInstInstrumentation::Run(int argc, char **argv, uint32_t init_time
   return ret;
 }
 
-RunResult TinyInstInstrumentation::RunWithCrashAnalysis(int argc, char** argv, uint32_t init_timeout, uint32_t timeout) {
+RunResult TinyInstInstrumentation::RunWithCrashAnalysis(int argc, char **argv, uint32_t init_timeout, uint32_t timeout)
+{
   // clean process when reproducing crashes
   instrumentation->Kill();
   // disable instrumentation when reproducing crashes
@@ -136,35 +159,43 @@ RunResult TinyInstInstrumentation::RunWithCrashAnalysis(int argc, char** argv, u
   return ret;
 }
 
-void TinyInstInstrumentation::CleanTarget() {
+void TinyInstInstrumentation::CleanTarget()
+{
   instrumentation->Kill();
 }
 
-bool TinyInstInstrumentation::HasNewCoverage() {
+bool TinyInstInstrumentation::HasNewCoverage()
+{
   return instrumentation->HasNewCoverage();
 }
 
-void TinyInstInstrumentation::GetCoverage(Coverage &coverage, bool clear_coverage) {
+void TinyInstInstrumentation::GetCoverage(Coverage &coverage, bool clear_coverage)
+{
   instrumentation->GetCoverage(coverage, clear_coverage);
 }
 
-void TinyInstInstrumentation::ClearCoverage() {
+void TinyInstInstrumentation::ClearCoverage()
+{
   instrumentation->ClearCoverage();
 }
 
-void TinyInstInstrumentation::IgnoreCoverage(Coverage &coverage) {
+void TinyInstInstrumentation::IgnoreCoverage(Coverage &coverage)
+{
   instrumentation->IgnoreCoverage(coverage);
 }
 
-TinyInstInstrumentation::~TinyInstInstrumentation() {
+TinyInstInstrumentation::~TinyInstInstrumentation()
+{
   instrumentation->Kill();
   delete instrumentation;
 }
 
-std::string TinyInstInstrumentation::GetCrashName() {
+std::string TinyInstInstrumentation::GetCrashName()
+{
   LiteCov::Exception exception = instrumentation->GetLastException();
   std::stringstream stream;
-  switch (exception.type) {
+  switch (exception.type)
+  {
   case LiteCov::ExceptionType::ACCESS_VIOLATION:
     stream << "access_violation";
     break;
@@ -185,6 +216,7 @@ std::string TinyInstInstrumentation::GetCrashName() {
   return stream.str();
 }
 
-uint64_t TinyInstInstrumentation::GetReturnValue() {
+uint64_t TinyInstInstrumentation::GetReturnValue()
+{
   return instrumentation->GetTargetReturnValue();
 }

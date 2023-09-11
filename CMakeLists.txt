@@ -31,6 +31,14 @@ if(NOT LINUX)
   add_subdirectory(TinyInst)
 endif()
 
+project(test_netmode)
+
+add_executable(test_netmode test_netmode.cpp)
+
+project(test_client)
+
+add_executable(test_client test_client.cpp)
+
 project("fuzzer")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party/Mersenne)

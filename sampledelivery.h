@@ -20,7 +20,8 @@ limitations under the License.
 #include "sample.h"
 #include "shm.h"
 
-class SampleDelivery {
+class SampleDelivery
+{
 public:
   virtual ~SampleDelivery() {}
   virtual void Init(int argc, char **argv) {}
@@ -29,17 +30,17 @@ public:
   virtual int DeliverSample(Sample *sample) = 0;
 };
 
-class FileSampleDelivery : public SampleDelivery {
+class FileSampleDelivery : public SampleDelivery
+{
 public:
-
-  void SetFilename(std::string filename) {
+  void SetFilename(std::string filename)
+  {
     this->filename = filename;
   }
 
   int DeliverSample(Sample *sample);
-  
-protected:
 
+protected:
   std::string filename;
 };
 
@@ -47,7 +48,8 @@ protected:
 #include "windows.h"
 #endif
 
-class SHMSampleDelivery : public SampleDelivery {
+class SHMSampleDelivery : public SampleDelivery
+{
 public:
   SHMSampleDelivery(char *name, size_t size);
   ~SHMSampleDelivery();
@@ -59,3 +61,23 @@ protected:
   unsigned char *shm;
 };
 
+class NetworkSampleDelivery : public SampleDelivery
+{
+public:
+  NetworkSampleDelivery(char *address, int port, int init_time);
+  ~NetworkSampleDelivery();
+
+  int DeliverSample(Sample *sample);
+
+protected:
+  char *address;
+  int port;
+  bool first_time;
+  int init_time;
+  std::thread t;
+  SOCKET delivery_socket;
+
+private:
+  void RepeatSendTcp(Sample *sample, bool retry);
+  void clearRecv(SOCKET delivery_socket);
+};
