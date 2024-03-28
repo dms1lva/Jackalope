@@ -146,4 +146,5 @@ if(LINUX)
   target_link_options(sancovtest PRIVATE "-fsanitize=address")
 endif()
 
+add_subdirectory(examples)
 
